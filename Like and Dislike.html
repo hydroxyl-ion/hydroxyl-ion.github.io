@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>弹丸风 好恶生成器</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --dangan-pink: #ff007f;
+            --dangan-black: #1a1a1a;
+            --dangan-white: #f0f0f0;
+        }
+
+        body {
+            background-color: var(--dangan-black);
+            color: var(--dangan-white);
+            font-family: 'DotGothic16', 'SimSun', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--dangan-pink);
+            padding: 2rem;
+            box-shadow: 0 0 15px var(--dangan-pink);
+        }
+
+        h1 {
+            color: var(--dangan-pink);
+            font-size: 2rem;
+            text-shadow: 
+                2px 2px 0 #000, 
+                -2px -2px 0 #000, 
+                2px -2px 0 #000, 
+                -2px 2px 0 #000,
+                3px 3px 5px rgba(0,0,0,0.7);
+            margin-bottom: 2rem;
+        }
+
+        .results-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+            flex-wrap: wrap; /* 移动端换行 */
+        }
+
+        .result-box {
+            flex: 1;
+            min-width: 200px; /* 避免在移动端被过度挤压 */
+            background-color: var(--dangan-black);
+            border: 2px solid var(--dangan-white);
+            padding: 1rem;
+        }
+
+        .result-box h2 {
+            margin-top: 0;
+            color: var(--dangan-pink);
+            border-bottom: 1px dashed var(--dangan-white);
+            padding-bottom: 0.5rem;
+            font-size: 1.2rem;
+        }
+
+        .output {
+            min-height: 5em; /* 保持高度稳定，防止布局跳动 */
+            padding-top: 0.5rem;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #c7c7c7;
+            word-wrap: break-word;
+        }
+
+        #generate-btn {
+            background-color: var(--dangan-pink);
+            color: var(--dangan-black);
+            font-family: 'DotGothic16', 'SimSun', sans-serif;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border: 3px solid var(--dangan-white);
+            padding: 0.8rem 2rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            text-shadow: 1px 1px 0px #fff;
+        }
+
+        #generate-btn:hover {
+            background-color: var(--dangan-white);
+            color: var(--dangan-pink);
+            border-color: var(--dangan-pink);
+            transform: scale(1.05);
+        }
+
+        #generate-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>超高校级的 好恶生成器</h1>
+        <div class="results-container">
+            <div class="result-box">
+                <h2>喜欢的东西</h2>
+                <p id="likes-output" class="output">（点击下方按钮生成）</p>
+            </div>
+            <div class="result-box">
+                <h2>讨厌的东西</h2>
+                <p id="dislikes-output" class="output">（点击下方按钮生成）</p>
+            </div>
+        </div>
+        <button id="generate-btn">生成！</button>
+    </div>
+
+    <script>
+        // 定义词库
+        const wordPool = [
+            '希望', '绝望', '红茶', '咖啡', '冰淇淋苏打', '占卜', '推理小说', '摇滚乐',
+            '古典音乐', '电子游戏', '晴天', '雨天', '对称的东西', '不对称的东西',
+            '都市传说', '超自然现象', '恶作剧', '收集癖', '哥特萝莉塔', '朋克时尚',
+            '小动物', '爬行类', '秘密', '谎言', '秩序', '混沌', '熬夜', '午睡',
+            '垃圾食品', '健康食品', '西洋棋', '将棋', '香水', '消毒水的味道', '安静',
+            '喧闹', '番茄汁', '碳酸饮料', '和风点心', '西式糕点', '网络冲浪',
+            '编程', '机械改造', '植物', '标本', '天体观测', '电影', 'B级片',
+            '打扫', '无聊', '约定', '背叛', '家庭料理', '高级餐厅', '幸运', '不幸',
+            '努力', '才能', '正义', '伪善', '热血', '冷静', '简约', '华丽'
+        ];
+
+        // 获取DOM元素
+        const generateBtn = document.getElementById('generate-btn');
+        const likesOutput = document.getElementById('likes-output');
+        const dislikesOutput = document.getElementById('dislikes-output');
+
+        // 生成函数
+        function generateTraits() {
+            // 创建一个词库的副本，以防修改原数组
+            let availableWords = [...wordPool];
+
+            // 随机决定生成1-3个“喜欢”
+            const likesCount = Math.floor(Math.random() * 3) + 1;
+            const selectedLikes = [];
+            for (let i = 0; i < likesCount; i++) {
+                if (availableWords.length === 0) break;
+                // 随机抽取一个词
+                const randomIndex = Math.floor(Math.random() * availableWords.length);
+                // 使用splice来抽取并从数组中移除，防止重复
+                const word = availableWords.splice(randomIndex, 1)[0];
+                selectedLikes.push(word);
+            }
+
+            // 随机决定生成1-3个“讨厌”
+            const dislikesCount = Math.floor(Math.random() * 3) + 1;
+            const selectedDislikes = [];
+            for (let i = 0; i < dislikesCount; i++) {
+                if (availableWords.length === 0) break;
+                // 从剩下的词中随机抽取
+                const randomIndex = Math.floor(Math.random() * availableWords.length);
+                const word = availableWords.splice(randomIndex, 1)[0];
+                selectedDislikes.push(word);
+            }
+
+            // 将结果显示在页面上，使用中文顿号“、”连接
+            likesOutput.textContent = selectedLikes.join('、');
+            dislikesOutput.textContent = selectedDislikes.join('、');
+        }
+
+        // 绑定点击事件
+        generateBtn.addEventListener('click', generateTraits);
+    </script>
+
+</body>
+</html>
